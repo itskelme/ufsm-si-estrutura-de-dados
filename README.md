@@ -1,7 +1,7 @@
-# Estrutura de Dados — Profª Deise de Brum Saccol
+# Estrutura de Dados
 
-UFSM · Ciência da Computação · 2026/2
+**UFSM · Sistemas de Informação · 2026/2** — Profª Deise de Brum Saccol
 
-- Aulas: terça e quinta, 10h30 — Lab 361 (3º andar, anexo A do CT)
+Aulas às terças e quintas, 10h30, no Lab 361 (3º andar do anexo A do CT).
 
-Ainda sem trabalhos. Provas de outros anos: [ufsm-provas-passadas](https://github.com/itskelme/ufsm-provas-passadas)
+Os trabalhos e exercícios entram aqui ao longo do semestre. Provas de anos anteriores: [ufsm-si-provas-passadas](https://github.com/itskelme/ufsm-si-provas-passadas).
