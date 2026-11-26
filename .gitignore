@@ -3,6 +3,14 @@
 *.o
 *.out
 a.out
+# auxiliares do LaTeX (o PDF final fica na pasta entrega/ de cada trabalho)
+*.aux
+*.log
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+trabalhos/*/relatorio/*.pdf
 # lixo de sistema/Drive
 desktop.ini
 Thumbs.db

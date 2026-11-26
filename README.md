@@ -6,7 +6,7 @@
 
 ## Sobre
 
-Repositório da disciplina para o semestre 2026/2. Ainda não há código: os trabalhos, exercícios e materiais entram aqui ao longo do semestre, nas pastas descritas abaixo.
+Repositório da disciplina para o semestre 2026/2. Os trabalhos, exercícios e materiais entram aqui ao longo do semestre, nas pastas descritas abaixo.
 
 | | |
 |---|---|
@@ -40,7 +40,7 @@ A lista abaixo não é a ementa oficial: são os assuntos que costumam compor Es
 
 | Pasta | Conteúdo | Situação |
 |---|---|---|
-| `trabalhos/` | Trabalhos avaliativos, um por subpasta (`t1-...`, `t2-...`) | A publicar |
+| `trabalhos/` | Trabalhos avaliativos, um por subpasta (`t1-...`, `t2-...`) | [T2: filas de prioridade (heap binário)](trabalhos/t2-filas-de-prioridade) |
 | `exercicios/` | Exercícios de aula e listas | A publicar |
 | `material/` | Slides, enunciados e material de apoio da disciplina | A publicar |
 
