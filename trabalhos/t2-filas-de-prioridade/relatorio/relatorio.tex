@@ -1,6 +1,6 @@
 % Relatorio do T2 - Filas de Prioridade (Estrutura de Dados A, UFSM 2026/2)
 % Formatacao ABNT (NBR 14724, NBR 6023, NBR 10520) seguindo o MDT da UFSM
-% Compilar: latexmk -pdf relatorio.tex
+% Compilar: pdflatex relatorio.tex (duas vezes, para o sumario e as referencias cruzadas)
 \documentclass[12pt,openany,oneside,a4paper,english,brazil,sumario=tradicional]{abntex2}
 
 \usepackage[T1]{fontenc}
@@ -22,12 +22,14 @@
 
 \setlength{\parindent}{1.25cm}
 \setlength{\parskip}{0pt}
+% nomes de funcao em \texttt nao hifenizam; isso evita que estourem a margem
+\setlength{\emergencystretch}{2em}
 
 % quadros (informacao textual), numerados em sequencia no documento todo
 \newcommand{\quadroname}{Quadro}
 \newfloat{quadro}{loq}{\quadroname}
 
-% legendas em fonte reduzida, separadas por travessao
+% legendas em fonte reduzida, separadas por travessao (exigencia da ABNT)
 \captionnamefont{\ABNTEXfontereduzida}
 \captiontitlefont{\ABNTEXfontereduzida}
 \captiondelim{ -- }
@@ -37,7 +39,7 @@
 
 % ---------- dados do trabalho ----------
 \titulo{FILAS DE PRIORIDADE: HEAPS BINÁRIOS E IMPLEMENTAÇÃO EM C}
-\autor{Diego Kelme Santos da Silva\\Gabriel Sangoi\\Pedro Klein}
+\autor{Diego Kelme Santos da Silva\\Gabriel Araujo Sangoi\\Pedro Augusto Klein}
 \local{Santa Maria, RS}
 \data{2026}
 \orientador[Professora:]{Deise de Brum Saccol}
@@ -49,7 +51,7 @@
 \makeatletter
 \hypersetup{
   pdftitle={Filas de prioridade: heaps binários e implementação em C},
-  pdfauthor={Diego Kelme Santos da Silva, Gabriel Sangoi, Pedro Klein},
+  pdfauthor={Diego Kelme Santos da Silva, Gabriel Araujo Sangoi, Pedro Augusto Klein},
   pdfsubject={Estrutura de Dados A - Trabalho T2},
   colorlinks=true, linkcolor=black, citecolor=black, filecolor=black, urlcolor=black,
   bookmarksdepth=4
@@ -60,10 +62,12 @@
 \renewcommand{\imprimircapa}{%
   \begin{capa}%
     \centering
+    \includegraphics[width=3.2cm]{figuras/ufsm_logo_colorido.png}\par
+    \vspace{0.6cm}
     {\bfseries UNIVERSIDADE FEDERAL DE SANTA MARIA\\
     CENTRO DE TECNOLOGIA\\
     CURSO DE GRADUAÇÃO EM SISTEMAS DE INFORMAÇÃO\par}
-    \vspace*{4cm}
+    \vspace*{3cm}
     {\imprimirautor\par}
     \vfill
     {\bfseries\imprimirtitulo\par}
@@ -95,31 +99,31 @@
 
 \chapter{INTRODUÇÃO}
 
-As estruturas de dados são essenciais na criação de programas, pois possibilitam a organização, o armazenamento e a manipulação de informações de forma eficiente. Conforme a aplicação, várias estruturas podem ser empregadas para satisfazer as exigências de organização e acesso às informações. Entre elas, sobressaem as filas de prioridade, que possibilitam ordenar elementos conforme sua relevância ou prioridade.
+Muitos programas precisam guardar dados e recuperá-los em uma ordem específica, e a estrutura de dados escolhida define quanto isso custa. Em vários casos, os dados precisam sair por ordem de importância, independentemente de quando entraram: o próximo processo que o sistema operacional vai executar, ou o próximo vértice a ser visitado em um grafo. Para esses casos existem as filas de prioridade.
 
-Ao contrário de uma fila convencional, onde os elementos são normalmente processados na sequência em que são adicionados, uma fila de prioridade leva em conta o valor de prioridade relacionado a cada item. Assim, um item com prioridade superior pode ser processado antes de outros que foram adicionados antes.
+Em uma fila comum, os elementos saem na mesma ordem em que entraram. Em uma fila de prioridade, cada elemento tem um valor de prioridade, e sai primeiro o de maior prioridade, mesmo que tenha chegado depois dos outros.
 
-Uma das maneiras mais eficazes de implementar filas de prioridade é através dos heaps binários (CORMEN \emph{et al.}, 2022; SEDGEWICK; WAYNE, 2011). Essa estrutura emprega uma árvore binária completa e adota regras específicas de disposição dos elementos, possibilitando operações como inserção e remoção com custo logarítmico.
+A implementação mais usada para filas de prioridade é o heap binário (CORMEN \emph{et al.}, 2022; SEDGEWICK; WAYNE, 2011). Ele organiza os elementos em uma árvore binária completa, com uma regra de ordem entre cada pai e seus filhos, e com isso a inserção e a remoção custam $O(\log n)$.
 
-Os heaps binários podem ser divididos em duas categorias principais: heap máximo e heap mínimo. No primeiro, o maior elemento fica na raiz da árvore, enquanto, no segundo, o menor elemento assume essa posição. Essa propriedade possibilita acessar de forma rápida o elemento com a maior ou a menor prioridade, conforme o tipo empregado.
+Há dois tipos de heap binário: o heap máximo, em que o maior elemento fica na raiz, e o heap mínimo, em que a raiz guarda o menor. Nos dois, o elemento de maior prioridade pode ser consultado direto na raiz.
 
-O propósito deste trabalho é expor os conceitos essenciais dos heaps binários, explicar suas características e ilustrar o funcionamento das operações principais executadas nessa estrutura. Será apresentada também uma implementação na linguagem C, centrada em um heap máximo armazenado em vetor, possibilitando ver na prática como os elementos são adicionados, retirados e rearranjados para manter as propriedades da estrutura.
+Este relatório apresenta a definição e as propriedades dos heaps binários, a forma de armazená-los em vetor e as operações de inserção e remoção, com exemplos passo a passo e algoritmos em pseudolinguagem. No fim, descreve o programa em C que implementamos: um heap máximo guardado em vetor, com um menu para inserir, remover e imprimir os elementos.
 
 \chapter{DEFINIÇÃO DE HEAP BINÁRIO}
 
-Um heap binário é uma estrutura de dados disposta como uma árvore binária completa, que respeita uma determinada propriedade de ordenação entre os seus nós (CORMEN \emph{et al.}, 2022). Essa estrutura é amplamente empregada na criação de filas de prioridade, pois possibilita manter os elementos organizados sem necessitar de uma ordenação total após cada operação.
+Um heap binário é uma árvore binária completa em que os nós obedecem a uma regra de ordem entre pai e filhos (CORMEN \emph{et al.}, 2022). Essa regra é mais fraca que uma ordenação completa, e é justamente por isso que o heap serve para filas de prioridade: ele deixa o elemento de maior prioridade sempre à mão sem reordenar tudo a cada operação.
 
-Para entender seu funcionamento, é essencial conhecer duas características principais: a estrutura da árvore e a propriedade do heap.
+Duas condições definem um heap: o formato da árvore e a regra de ordem.
 
-A primeira característica é que o heap deve ser uma árvore binária completa. Isso implica que todos os níveis da árvore precisam estar totalmente preenchidos, exceto, possivelmente, o último nível. Os elementos desse nível final devem ser organizados da esquerda para a direita, sem que haja espaços vazios entre as posições.
+Quanto ao formato, a árvore precisa ser completa. Todos os níveis ficam cheios, menos talvez o último, e os nós do último nível ocupam as posições mais à esquerda, sem buracos entre eles.
 
-A segunda característica diz respeito à comparação dos valores entre os nós. Conforme o tipo de heap empregado, o valor de cada pai precisa ser maior ou igual (ou menor ou igual) aos valores de seus filhos. Essa regra deve ser seguida em toda a estrutura para que ela continue sendo um heap válido.
+Quanto à ordem, o valor de cada pai deve ser maior ou igual ao valor dos seus filhos, no heap máximo, ou menor ou igual, no heap mínimo. A regra vale para todos os nós da árvore. Se algum pai a violar, a estrutura deixa de ser um heap.
 
-Há duas categorias principais de heap binário, que se distinguem pela regra de comparação entre os elementos: o heap máximo e o heap mínimo.
+Os dois tipos de heap diferem só nessa comparação. As seções a seguir tratam de cada um.
 
 \section{HEAP MÁXIMO}
 
-O heap máximo é uma estrutura de dados onde o valor de cada nó pai deve ser sempre maior ou igual ao valor de seus filhos. Essa regra vale em todos os níveis da árvore, assegurando que nenhum filho tenha um valor maior que o de seu pai. A Figura~\ref{fig:max} mostra um exemplo.
+No heap máximo, cada pai é maior ou igual aos seus filhos. Como a regra se repete em todos os níveis, nenhum nó pode ser maior que o seu pai. A Figura~\ref{fig:max} mostra um exemplo.
 
 \begin{figure}[htb]
   \caption{\label{fig:max}Exemplo de heap de máximo}
@@ -128,17 +132,17 @@ O heap máximo é uma estrutura de dados onde o valor de cada nó pai deve ser s
   \fonte{Elaborado pelos autores (2026).}
 \end{figure}
 
-Devido a essa característica, o maior elemento da estrutura estará sempre posicionado na raiz da árvore. Isso possibilita que o programa obtenha diretamente o maior valor guardado, sem a necessidade de examinar todos os elementos.
+A consequência direta é que o maior elemento está sempre na raiz. Para descobrir o maior valor guardado, o programa só precisa olhar a primeira posição.
 
-Uma característica fundamental do heap máximo é que seus elementos não precisam estar totalmente ordenados. A estrutura apenas requer que cada pai seja maior ou igual aos seus filhos, não havendo a necessidade de que os valores estejam em ordem decrescente ao se percorrer os níveis da árvore. Na Figura~\ref{fig:max}, por exemplo, o 16 está em um nível mais baixo que o 19, mas é menor que ele apenas por coincidência: os dois estão em ramos diferentes e não são comparados.
+Os elementos, porém, não ficam ordenados. A regra compara cada nó apenas com os próprios filhos, e nós de ramos diferentes não têm relação entre si. Na Figura~\ref{fig:max}, se no lugar do 16 houvesse um 24, o heap continuaria válido: o 24 ficaria um nível abaixo do 19 sendo maior que ele, mas só precisa ser menor que o próprio pai, o 25.
 
-Essa estrutura torna o heap máximo particularmente valioso na criação de filas de prioridade, onde é essencial identificar rapidamente os elementos de maior prioridade. Como o valor máximo permanece sempre na raiz, sua consulta pode ser feita em tempo constante, ou seja, com complexidade $O(1)$.
+Por isso o heap máximo funciona bem como fila de prioridade: consultar o maior elemento custa $O(1)$.
 
-Contudo, sempre que um elemento é adicionado ou retirado, pode ser preciso reestruturar a árvore para manter essa característica. Para isso, são empregados os procedimentos Upheap e Downheap, que movimentam os elementos entre os níveis da árvore. No desenvolvimento deste trabalho foi empregado exatamente o heap máximo: a implementação em C mantém o valor máximo na raiz e faz uso de comparações e trocas para manter a ordem da estrutura.
+Inserções e remoções podem quebrar a regra de ordem, e a estrutura precisa ser reorganizada depois de cada uma. Quem faz isso são os procedimentos Upheap e Downheap, descritos no Capítulo~5. Neste trabalho usamos um heap máximo: o programa em C mantém o maior valor na raiz e restaura a ordem com comparações e trocas.
 
 \section{HEAP MÍNIMO}
 
-O heap mínimo possui uma estrutura parecida com a do heap máximo, mas aplica a regra oposta: o valor de cada nó pai deve ser sempre menor ou igual aos valores dos seus filhos. A Figura~\ref{fig:min} mostra um heap mínimo com os mesmos valores da Figura~\ref{fig:max}.
+O heap mínimo segue a regra oposta: cada pai é menor ou igual aos seus filhos. A Figura~\ref{fig:min} mostra um heap mínimo com os mesmos valores da Figura~\ref{fig:max}.
 
 \begin{figure}[htb]
   \caption{\label{fig:min}Exemplo de heap de mínimo}
@@ -147,35 +151,35 @@ O heap mínimo possui uma estrutura parecida com a do heap máximo, mas aplica a
   \fonte{Elaborado pelos autores (2026).}
 \end{figure}
 
-Essa característica assegura que o menor elemento existente na estrutura permaneça sempre na raiz da árvore. Dessa forma, quando há a necessidade de obter o menor valor guardado, não é preciso passar por todos os elementos, pois ele pode ser achado diretamente na posição inicial do heap.
+Nesse caso, o menor elemento fica sempre na raiz e pode ser obtido sem percorrer os demais.
 
-Assim como no heap máximo, os elementos de um heap mínimo não precisam estar totalmente ordenados. A estrutura assegura apenas que cada pai tenha um valor menor ou igual aos valores de seus descendentes, mantendo essa regra em todos os níveis da árvore.
+Assim como no heap máximo, os elementos não ficam ordenados. Cada pai só precisa ser menor ou igual aos seus filhos e, por consequência, a todos os seus descendentes.
 
-O heap mínimo é empregado em circunstâncias em que é necessário localizar rapidamente o item de menor valor ou prioridade. Um exemplo de uso é o algoritmo de Dijkstra, empregado para descobrir caminhos mínimos em grafos, no qual uma fila de prioridade ajuda na escolha do próximo vértice a ser analisado (CORMEN \emph{et al.}, 2022).
+O heap mínimo aparece quando o elemento de maior prioridade é o de menor valor. O algoritmo de Dijkstra, que calcula caminhos mínimos em grafos, usa uma fila de prioridade desse tipo para escolher o próximo vértice a processar, que é o de menor distância conhecida (CORMEN \emph{et al.}, 2022).
 
-O heap máximo e o heap mínimo compartilham a mesma estrutura de árvore binária completa e aplicam processos semelhantes para a inserção e a reorganização. A diferença principal está na condição aplicada para comparar os elementos. Assim, enquanto o heap máximo coloca o maior elemento na raiz, o heap mínimo coloca o menor elemento nesse lugar. A escolha entre os dois varia conforme a necessidade da aplicação.
+Os dois tipos têm o mesmo formato de árvore e usam os mesmos procedimentos de inserção e reorganização, trocando apenas o sentido da comparação. A escolha depende de qual extremo a aplicação precisa acessar mais rápido.
 
 \chapter{PROPRIEDADES DOS HEAPS BINÁRIOS}
 
-Os heaps binários têm características particulares que asseguram sua estrutura e possibilitam que suas operações sejam executadas de forma eficiente. Essas características estão ligadas tanto ao formato da árvore quanto à maneira como os elementos são dispostos nela.
+As propriedades a seguir valem para qualquer heap binário e explicam por que as operações sobre ele são rápidas.
 
-A primeira característica é a de árvore binária completa: todos os níveis da árvore precisam estar totalmente preenchidos, exceto, possivelmente, o último, que é preenchido da esquerda para a direita, sem deixar espaços entre os elementos.
+A primeira é o formato de árvore completa, já descrito no Capítulo~2. É ela que permite guardar o heap em um vetor sem deixar posições vazias no meio, como mostra o Capítulo~4.
 
-A segunda característica diz respeito à disposição dos valores. No heap máximo, cada nó pai deve ter um valor maior ou igual aos valores de seus filhos. No heap mínimo, cada nó pai deve ter um valor menor ou igual ao dos seus filhos. Essa regra deve ser seguida em todos os níveis da estrutura.
+A segunda é a regra de ordem entre pai e filhos: no heap máximo, cada pai é maior ou igual aos filhos; no mínimo, menor ou igual. A regra vale para todos os nós ao mesmo tempo.
 
-Outra característica significativa é que um heap não representa uma árvore completamente ordenada. A estrutura assegura somente a relação entre cada nó e seus filhos, não criando uma ordem total entre todos os elementos. Assim, não é necessário que os valores estejam dispostos em ordem crescente ou decrescente ao percorrer a árvore ou o vetor.
+A terceira é que o heap não define uma ordem total. A regra só compara nós ligados diretamente, então percorrer a árvore por níveis, ou o vetor do início ao fim, não produz uma sequência ordenada. No heap final da Figura~\ref{fig:insercao}, por exemplo, o vetor é 45, 38, 40, 20, 10, 30, e o 38 aparece antes do 40.
 
-Além disso, a altura de um heap binário com $n$ elementos é $\lfloor \log_2 n \rfloor$ (CORMEN \emph{et al.}, 2022). Isso ocorre porque a estrutura é uma árvore completa, em que cada nível comporta o dobro de nós do nível anterior. Essa propriedade impacta diretamente a eficiência das operações de inserção e de reorganização, que percorrem no máximo um caminho da raiz até uma folha.
+A quarta é a altura. Um heap com $n$ elementos tem altura $\lfloor \log_2 n \rfloor$ (CORMEN \emph{et al.}, 2022), porque cada nível comporta o dobro de nós do anterior. Um heap com 1.000 elementos, por exemplo, tem altura 9. Como a inserção e a remoção percorrem no máximo um caminho entre a raiz e uma folha, o custo delas é proporcional a essa altura.
 
-Por último, é fundamental ressaltar que essas características devem ser mantidas após qualquer operação que altere a estrutura. Por essa razão, os heaps empregam procedimentos específicos, como Upheap e Downheap, que são responsáveis por reestruturar os elementos quando necessário.
+Toda operação que altera o heap precisa terminar com essas propriedades valendo de novo. É para isso que servem o Upheap e o Downheap.
 
 \chapter{REPRESENTAÇÃO DE UM HEAP BINÁRIO EM VETOR}
 
-Uma das grandes vantagens dos heaps binários é a capacidade de guardar seus elementos diretamente em um vetor, eliminando a necessidade de usar ponteiros para ligar os diversos nós da árvore.
+Um heap binário pode ser guardado em um vetor comum, sem ponteiros ligando os nós.
 
-Essa representação é viável graças à característica de árvore binária completa. Já que os elementos são dispostos da esquerda para a direita em cada nível, suas localizações seguem uma ordem previsível dentro do vetor: a raiz ocupa a posição 0, seus filhos ocupam as posições 1 e 2, os filhos destes ocupam as posições 3 a 6, e assim por diante.
+Isso funciona porque a árvore é completa. Lendo os nós nível a nível, da esquerda para a direita, cada nó ganha uma posição fixa no vetor: a raiz fica na posição 0, os filhos dela nas posições 1 e 2, os netos nas posições 3 a 6, e assim por diante.
 
-Levando em conta que os índices iniciam em zero, é possível determinar diretamente a localização do pai e dos filhos de qualquer elemento (MORIN, 2013). Para isso, são empregadas as seguintes fórmulas, em que $i$ é o índice do elemento examinado:
+Com os índices começando em zero, as posições do pai e dos filhos de um elemento saem de contas simples sobre o índice $i$ desse elemento (MORIN, 2013):
 
 \begin{itemize}
   \item posição do pai: $(i - 1) / 2$;
@@ -183,44 +187,44 @@ Levando em conta que os índices iniciam em zero, é possível determinar direta
   \item posição do filho direito: $2i + 2$.
 \end{itemize}
 
-Uma vez que os índices são números inteiros, a divisão usada para determinar o pai considera apenas a parte inteira do resultado. A Figura~\ref{fig:vetor} mostra o heap da Figura~\ref{fig:max} armazenado em vetor e aplica as fórmulas ao índice 1.
+Como os índices são inteiros, a divisão do cálculo do pai descarta a parte fracionária, e por isso os índices 3 e 4 têm o mesmo pai, o índice 1. A Figura~\ref{fig:vetor} mostra o heap da Figura~\ref{fig:max} guardado em vetor e aplica as fórmulas ao índice 1.
 
 \begin{figure}[htb]
   \caption{\label{fig:vetor}Heap de máximo armazenado em vetor, com índices a partir de 0}
   \centering
-  \includegraphics[width=0.78\textwidth]{figuras/fig_vetor_indices.png}
+  \includegraphics[width=0.66\textwidth]{figuras/fig_vetor_indices.png}
   \fonte{Elaborado pelos autores (2026).}
 \end{figure}
 
-O uso dessas fórmulas torna a navegação pela estrutura mais simples, pois possibilita encontrar os elementos conectados sem a necessidade de explorar toda a árvore. Além disso, elimina a necessidade de guardar referências ou endereços de memória para cada nó.
+Com essas fórmulas, o programa encontra o pai ou os filhos de um nó em tempo constante, sem percorrer a árvore e sem guardar endereços de memória.
 
-Na implementação deste trabalho, o heap é representado por um vetor de inteiros, com a capacidade máxima definida pela constante \texttt{MAX}, cujo valor é 150. A estrutura possui uma variável denominada \texttt{tam}, que indica quantos elementos estão armazenados atualmente. Essa variável é fundamental, pois possibilita reconhecer quais posições do vetor estão preenchidas, gerenciar as inserções e evitar que sejam incluídos elementos além da capacidade disponível.
+No nosso programa, o heap é um vetor de inteiros com capacidade dada pela constante \texttt{MAX}, igual a 150, e uma variável \texttt{tam} com o número de elementos guardados. As posições de 0 a \texttt{tam - 1} formam o heap, e o que estiver depois delas é ignorado. A variável também impede novas inserções quando o vetor está cheio.
 
-Assim, o armazenamento em vetor facilita a implementação, tornando-a mais organizada e possibilitando a utilização de operações aritméticas simples para acessar os elementos da árvore.
+Guardar o heap em vetor deixa o código mais curto: subir ou descer na árvore vira uma conta com o índice.
 
 \chapter{OPERAÇÕES PRINCIPAIS DE UM HEAP BINÁRIO}
 
-As operações principais executadas em um heap binário são a inserção, a remoção e a reestruturação dos elementos. Essas operações asseguram que a estrutura preserve suas características essenciais, garantindo que o elemento de maior ou menor prioridade fique na posição correta, conforme o tipo de heap empregado.
+As operações de um heap binário são a inserção e a remoção, e as duas dependem de dois procedimentos de reorganização: o Upheap, que sobe um elemento em direção à raiz, e o Downheap, que desce um elemento em direção às folhas. Sedgewick e Wayne (2011) chamam esses procedimentos de \emph{swim} e \emph{sink}.
 
-No heap máximo, empregado na implementação deste trabalho, o maior elemento deve sempre estar na raiz da árvore. Para assegurar essa característica após mudanças na estrutura, são empregados processos de reorganização denominados Upheap e Downheap, também conhecidos como ajuste para cima e ajuste para baixo (SEDGEWICK; WAYNE, 2011).
+Como usamos um heap máximo, os exemplos deste capítulo partem da regra de que cada pai é maior ou igual aos seus filhos.
 
 \section{INSERÇÃO DE ELEMENTOS}
 
-A inserção envolve acrescentar um novo elemento ao heap sem prejudicar suas características. Para isso, o elemento é primeiramente colocado na próxima posição disponível da estrutura, ou seja, logo após o último elemento do vetor que representa a árvore.
+Para inserir, o novo elemento é colocado na primeira posição livre do vetor, logo depois do último elemento. Essa escolha mantém a árvore completa.
 
-Essa posição é importante porque mantém a propriedade de árvore binária completa. Contudo, apenas adicionar o elemento não assegura que a propriedade de ordenação do heap continue a ser mantida. Em um heap máximo, por exemplo, o valor novo pode ser maior que o seu pai, exigindo que a organização da estrutura seja refeita.
+A regra de ordem, porém, pode ser quebrada, já que em um heap máximo o valor novo pode ser maior que o seu pai.
 
-Depois de adicionar o elemento, o procedimento Upheap é acionado. Ele compara o novo valor com os seus ancestrais e efetua as trocas necessárias até que a propriedade do heap seja restaurada.
+Por isso, logo depois de colocar o elemento, o programa chama o Upheap, que o compara com os ancestrais e faz as trocas necessárias.
 
-A inserção tem complexidade $O(\log n)$, pois, no cenário mais desfavorável, o elemento pode atravessar toda a altura da árvore até chegar à raiz. Como a altura de um heap binário completo cresce de maneira logarítmica em relação ao número de elementos, a quantidade de operações requeridas também é proporcional a $\log n$.
+No pior caso, o elemento sobe da folha até a raiz, passando por todos os níveis. Como a altura é $\lfloor \log_2 n \rfloor$, a inserção custa $O(\log n)$.
 
 \section{PROCEDIMENTO UPHEAP}
 
-O procedimento Upheap, também chamado de subida ou ajuste ascendente, é utilizado principalmente após a adição de um novo elemento. Seu objetivo é assegurar que a propriedade de ordem do heap máximo seja preservada.
+O Upheap, ou ajuste para cima, recebe a posição de um elemento que pode ser maior que o seu pai e o sobe até um lugar em que a regra de ordem volte a valer.
 
-O processo inicia na posição onde o novo item foi colocado. Calcula-se o índice do pai e comparam-se os dois valores. Se o elemento atual for maior que seu pai, os valores são trocados de lugar. Esse procedimento se repete enquanto o elemento permanecer maior que seu pai e termina quando o elemento atinge a raiz ou quando encontra um pai com valor maior ou igual ao seu.
+A cada passo, calcula-se o índice do pai e comparam-se os dois valores. Se o elemento for maior que o pai, os dois trocam de lugar e o processo continua a partir da nova posição. O Upheap termina quando o elemento chega à raiz ou encontra um pai maior ou igual a ele.
 
-A Figura~\ref{fig:insercao} mostra, passo a passo, a inserção do valor 45 em um heap máximo com cinco elementos. O 45 entra no índice 5 e sobe duas vezes até chegar à raiz. Visualizações interativas do mesmo processo estão disponíveis no OpenDSA (VIRGINIA TECH, [20--]).
+A Figura~\ref{fig:insercao} mostra a inserção do valor 45 em um heap máximo com cinco elementos. O 45 entra no índice 5 e sobe duas vezes até a raiz. O OpenDSA tem visualizações interativas do mesmo processo (VIRGINIA TECH, [20--]).
 
 \begin{figure}[p]
   \caption{\label{fig:insercao}Passo a passo da inserção do valor 45 (Upheap)}
@@ -229,33 +233,33 @@ A Figura~\ref{fig:insercao} mostra, passo a passo, a inserção do valor 45 em u
   \fonte{Elaborado pelos autores (2026).}
 \end{figure}
 
-No heap máximo, esse processo assegura que nenhum filho tenha um valor maior que o de seu pai. Assim, a estrutura continua seguindo a propriedade de ordem definida.
+Ao final, nenhum filho é maior que o seu pai e o heap volta a ser válido.
 
-Na implementação em C deste trabalho, a função \texttt{upHeap} executa esse procedimento utilizando a fórmula do índice do pai, $(i - 1) / 2$. A função sobe pelos níveis da árvore conforme necessário, executando as trocas até que a posição correta do elemento seja encontrada.
+No programa, a função \texttt{upHeap} faz exatamente isso, usando a fórmula $(i - 1) / 2$ para achar o pai.
 
-A complexidade do processo é $O(\log n)$, já que o elemento pode subir, no máximo, a altura da árvore.
+Como o elemento sobe no máximo a altura da árvore, o Upheap custa $O(\log n)$.
 
 \section{REMOÇÃO DE ELEMENTOS}
 
-A remoção é uma operação central em uma fila de prioridade. Na sua forma clássica, em um heap máximo, o item retirado é o que está na raiz, porque representa o maior valor e, portanto, detém a maior prioridade (SEDGEWICK; WAYNE, 2011).
+Em uma fila de prioridade, remover significa retirar o elemento de maior prioridade. Em um heap máximo, ele está na raiz (SEDGEWICK; WAYNE, 2011).
 
-Para executar essa remoção, o valor da raiz é substituído pelo último elemento presente no heap. Em seguida, o tamanho da estrutura é diminuído, desconsiderando a posição que anteriormente abrigava o último elemento. Como o novo valor da raiz pode não seguir a propriedade de ordem, é preciso realizar o procedimento Downheap para reestruturar a árvore. Na implementação deste trabalho, essa é a opção 2 do menu, executada pela função \texttt{removeMaior}.
+A raiz não pode simplesmente ser apagada, porque a árvore ficaria sem topo. Em vez disso, o último elemento do vetor é copiado para a raiz e o tamanho do heap diminui em um. A árvore continua completa, mas o valor que foi para a raiz em geral é pequeno demais para ficar lá, e o Downheap precisa descê-lo até a posição certa. No programa, essa é a opção 2 do menu, feita pela função \texttt{removeMaior}.
 
-Além da remoção clássica, a implementação também permite remover um valor específico informado pelo usuário (opção 4 do menu). Para isso, o programa utiliza a função \texttt{buscaNo}, que percorre o vetor e encontra a posição onde o valor informado está guardado. Após localizar o elemento, sua posição recebe o último elemento do heap, e o tamanho da estrutura é reduzido.
+O programa também permite remover um valor qualquer, escolhido pelo usuário, na opção 4 do menu. A função \texttt{buscaNo} percorre o vetor procurando o valor. Quando o encontra, a posição dele recebe o último elemento do heap e o tamanho diminui em um.
 
-Depois dessa troca, a estrutura da árvore deve ser recuperada. Conforme o valor que passou a ocupar a posição, pode ser necessário fazer um ajuste para cima ou para baixo. Assim, a estrutura mantém a propriedade de heap máximo.
+O elemento que ocupou essa posição pode ser maior que o novo pai ou menor que algum dos novos filhos. No primeiro caso ele precisa subir, com o Upheap; no segundo, descer, com o Downheap.
 
-É relevante enfatizar que a remoção de um valor específico inclui uma fase extra em relação à remoção da raiz: a procura pelo elemento. Uma vez que essa busca percorre o vetor, sua complexidade é $O(n)$. O ajuste posterior tem complexidade $O(\log n)$, mas o custo total da operação permanece $O(n)$, em razão da busca.
+Essa remoção tem um passo a mais que a remoção da raiz: achar o elemento. Como o heap não é ordenado, a busca é linear e custa $O(n)$. O ajuste feito depois custa $O(\log n)$, então a busca domina e o custo total é $O(n)$.
 
 \section{PROCEDIMENTO DOWNHEAP}
 
-O procedimento Downheap, também chamado de descida ou ajuste para baixo, é aplicado quando um elemento deve ser movido para os níveis inferiores da árvore para que a propriedade de ordem do heap seja recuperada.
+O Downheap, ou ajuste para baixo, faz o caminho inverso do Upheap: recebe a posição de um elemento que pode ser menor que algum dos seus filhos e o desce até um lugar em que a regra de ordem volte a valer.
 
-No heap máximo, o processo compara o elemento em questão com seus filhos à esquerda e à direita. Se algum dos filhos tiver um valor maior, é preciso fazer uma troca. Quando há dois filhos, deve-se escolher aquele que possui o maior valor, já que ele ficará acima do outro filho e a propriedade do heap precisa se manter.
+No heap máximo, o elemento é comparado com os dois filhos. Se algum deles for maior, o elemento troca de lugar com o maior dos dois. Trocar com o menor não resolveria, porque o filho menor subiria para cima do maior e a regra continuaria quebrada.
 
-Após a troca, o processo continua a partir da nova posição do elemento. Esse procedimento se repete até que o elemento esteja em uma posição onde seja maior ou igual aos seus filhos, ou até atingir uma posição sem filhos.
+Depois da troca, o processo continua a partir da nova posição. O Downheap termina quando o elemento é maior ou igual aos dois filhos ou chega a uma posição sem filhos.
 
-A Figura~\ref{fig:remocao} mostra, passo a passo, a remoção da raiz do heap obtido na Figura~\ref{fig:insercao}. O último elemento (30) vai para a raiz e desce uma vez, trocando de lugar com o maior filho (40).
+A Figura~\ref{fig:remocao} mostra a remoção da raiz do heap obtido na Figura~\ref{fig:insercao}. O último elemento, 30, vai para a raiz e desce uma vez, trocando de lugar com o maior filho, o 40.
 
 \begin{figure}[p]
   \caption{\label{fig:remocao}Passo a passo da remoção da raiz (Downheap)}
@@ -264,19 +268,19 @@ A Figura~\ref{fig:remocao} mostra, passo a passo, a remoção da raiz do heap ob
   \fonte{Elaborado pelos autores (2026).}
 \end{figure}
 
-Na implementação em C, a função \texttt{downHeap} executa essas comparações utilizando os índices dos filhos esquerdo e direito. O processo verifica quais posições existem dentro do tamanho atual do heap, identifica o maior filho e efetua a troca quando necessário.
+No programa, a função \texttt{downHeap} calcula os índices dos dois filhos, verifica quais deles existem dentro do tamanho atual do heap, escolhe o maior e faz a troca quando necessário.
 
-Assim como o Upheap, o Downheap também apresenta complexidade $O(\log n)$, já que, no pior cenário, o elemento pode atravessar todos os níveis da árvore até alcançar a posição final.
+Como o elemento desce no máximo a altura da árvore, o Downheap também custa $O(\log n)$.
 
 \chapter{ALGORITMOS EM PSEUDOLINGUAGEM}
 
-Os pseudocódigos representam a lógica das operações de forma simplificada, independentemente de uma linguagem de programação específica. Eles ajudam na compreensão dos processos empregados e mostram a ordem das etapas essenciais para operar um heap binário.
+Este capítulo traz os algoritmos em pseudolinguagem, sem os detalhes de leitura e impressão do programa em C.
 
-Dado que a implementação deste trabalho utiliza um heap máximo, os pseudocódigos a seguir assumem que o maior elemento deve estar na raiz e que cada pai deve ter um valor maior ou igual ao de seus filhos. Em todos eles, \texttt{tam} é a quantidade atual de elementos e \texttt{pai(i)} vale $(i - 1) / 2$.
+Todos supõem um heap máximo. Neles, \texttt{tam} é a quantidade atual de elementos e \texttt{pai(i)} vale $(i - 1) / 2$.
 
 \section{INSERÇÃO}
 
-O procedimento de inserção adiciona um novo elemento na próxima posição disponível do heap e, depois disso, chama o procedimento Upheap para restabelecer a propriedade de ordem (Quadro~\ref{qua:inserir}).
+A inserção coloca o novo valor na primeira posição livre e chama o Upheap (Quadro~\ref{qua:inserir}).
 
 \begin{quadro}[htb]
 \caption{\label{qua:inserir}Pseudocódigo da inserção}
@@ -294,11 +298,11 @@ FIM
 \fonte{Elaborado pelos autores (2026).}
 \end{quadro}
 
-Inicialmente, o algoritmo verifica se existe espaço disponível para armazenar um novo elemento. Caso exista, o valor é colocado na primeira posição livre do vetor e o tamanho do heap é atualizado. Em seguida, o procedimento Upheap é executado para garantir que o novo elemento esteja na posição adequada.
+Se o vetor estiver cheio, o algoritmo retorna sem inserir. Caso contrário, grava o valor na posição \texttt{tam}, aumenta o tamanho e chama o Upheap a partir dessa posição.
 
 \section{UPHEAP}
 
-O procedimento Upheap compara o elemento com seu pai, realizando trocas enquanto o elemento atual possuir valor maior (Quadro~\ref{qua:upheap}).
+O Upheap compara o elemento com o pai e troca os dois enquanto o elemento for maior (Quadro~\ref{qua:upheap}).
 
 \begin{quadro}[htb]
 \caption{\label{qua:upheap}Pseudocódigo do Upheap}
@@ -318,11 +322,11 @@ FIM
 \fonte{Elaborado pelos autores (2026).}
 \end{quadro}
 
-O algoritmo começa na posição do elemento que precisa ser ajustado. Enquanto ele não estiver na raiz, calcula o índice de seu pai e compara os valores. Se o elemento atual for maior, ocorre uma troca e o processo continua na posição do pai. Caso contrário, a execução termina, pois a propriedade de ordem já está sendo respeitada.
+O laço para em duas situações: quando o elemento chega à raiz ($i = 0$) ou quando o pai já é maior ou igual a ele.
 
 \section{REMOÇÃO DO MAIOR ELEMENTO}
 
-A remoção clássica de uma fila de prioridade retira a raiz. O último elemento ocupa o lugar dela e o procedimento Downheap restaura a propriedade de ordem (Quadro~\ref{qua:removermaior}).
+A remoção do maior elemento guarda o valor da raiz, coloca o último elemento no lugar dele e chama o Downheap a partir da raiz (Quadro~\ref{qua:removermaior}).
 
 \begin{quadro}[htb]
 \caption{\label{qua:removermaior}Pseudocódigo da remoção do maior elemento}
@@ -345,7 +349,7 @@ FIM
 
 \section{DOWNHEAP}
 
-O procedimento Downheap ajusta um elemento em direção aos níveis inferiores da árvore. Ele compara o elemento com seus filhos e realiza trocas quando algum deles apresenta valor maior (Quadro~\ref{qua:downheap}).
+O Downheap procura o maior valor entre o elemento e seus filhos. Se não for o próprio elemento, faz a troca e continua (Quadro~\ref{qua:downheap}).
 
 \begin{quadro}[htb]
 \caption{\label{qua:downheap}Pseudocódigo do Downheap}
@@ -373,11 +377,11 @@ FIM
 \fonte{Elaborado pelos autores (2026).}
 \end{quadro}
 
-O algoritmo calcula os índices dos filhos esquerdo e direito e verifica quais deles existem dentro do tamanho atual do heap. Em seguida, identifica o maior valor entre o elemento atual e seus filhos. Caso o maior valor continue sendo o do próprio elemento, a propriedade de ordem está preservada e o procedimento termina. Caso contrário, ocorre uma troca com o maior filho, e o processo continua a partir da nova posição do elemento.
+As condições \texttt{esq < tam} e \texttt{dir < tam} evitam ler posições que estão fora do heap. Quando o maior dos três é o próprio elemento, a regra de ordem já vale e o laço termina. Senão, o elemento troca de lugar com o maior filho e a análise continua a partir da nova posição.
 
 \section{REMOÇÃO DE UM VALOR ESPECÍFICO}
 
-Além da remoção da raiz, a implementação deste trabalho permite que o usuário indique qual valor pretende retirar do heap. Por essa razão, antes de efetuar a troca, é preciso encontrar a posição do elemento desejado (Quadro~\ref{qua:removervalor}).
+A remoção de um valor qualquer precisa, antes de tudo, achar a posição desse valor (Quadro~\ref{qua:removervalor}).
 
 \begin{quadro}[htb]
 \caption{\label{qua:removervalor}Pseudocódigo da remoção de um valor específico}
@@ -402,13 +406,13 @@ FIM
 \fonte{Elaborado pelos autores (2026).}
 \end{quadro}
 
-Inicialmente, o algoritmo busca o valor fornecido pelo usuário. Se ele não for localizado, a operação termina sem alterar o heap. Ao localizar o elemento, sua posição recebe o valor que estava na última posição do vetor e o tamanho da estrutura é diminuído. Por último, verifica-se se o elemento que ocupou a posição deve subir ou descer na árvore: se ele for maior que seu pai, executa-se o Upheap; do contrário, o ajuste é feito pelo Downheap.
+Se o valor não existir, nada muda. Se existir, a posição dele recebe o último elemento e o tamanho diminui. Por fim, o elemento que ocupou a posição sobe com o Upheap, se for maior que o pai, ou desce com o Downheap, caso contrário. A condição \texttt{i < tam} cobre o caso em que o valor removido era o último do vetor, em que não sobra nada para ajustar.
 
 \chapter{ANÁLISE DE COMPLEXIDADE}
 
-A análise de complexidade possibilita entender a eficiência das operações executadas em uma estrutura de dados. Em se tratando de heaps binários, a maior parte das operações de rearranjo tem complexidade logarítmica, uma vez que a altura da árvore é proporcional a $\log n$ (CORMEN \emph{et al.}, 2022).
+Nas operações de um heap binário, o custo de reorganizar a estrutura é proporcional à altura da árvore, que é $\lfloor \log_2 n \rfloor$ (CORMEN \emph{et al.}, 2022).
 
-Essa propriedade torna os heaps eficazes em situações que requerem, com frequência, a inserção de elementos e a consulta ou remoção dos valores de maior prioridade. O Quadro~\ref{qua:complexidade} resume as complexidades das operações empregadas neste trabalho.
+Por isso o heap funciona bem quando a aplicação insere elementos e consulta ou remove o maior deles com frequência. O Quadro~\ref{qua:complexidade} resume o custo de cada operação implementada neste trabalho.
 
 \begin{quadro}[htb]
 \caption{\label{qua:complexidade}Complexidade das operações do heap}
@@ -418,32 +422,32 @@ Essa propriedade torna os heaps eficazes em situações que requerem, com frequ�
 \hline
 \textbf{Operação} & \textbf{Complexidade} & \textbf{Justificativa} \\ \hline
 Acesso à raiz & $O(1)$ & A raiz está sempre na primeira posição do vetor. \\ \hline
-Inserção & $O(\log n)$ & O novo elemento pode precisar subir pela altura da árvore. \\ \hline
-Upheap & $O(\log n)$ & O elemento pode percorrer os níveis em direção à raiz. \\ \hline
-Downheap & $O(\log n)$ & O elemento pode percorrer os níveis em direção às folhas. \\ \hline
-Remoção da raiz & $O(\log n)$ & A substituição é seguida por um ajuste para baixo. \\ \hline
-Busca por valor & $O(n)$ & No pior caso, é necessário percorrer todo o vetor. \\ \hline
-Remoção de valor específico & $O(n)$ & A busca linear domina o custo da operação, seguida pelo ajuste logarítmico. \\ \hline
-Impressão do heap & $O(n)$ & Todos os elementos são percorridos para exibição. \\ \hline
+Inserção & $O(\log n)$ & O novo elemento pode precisar subir toda a altura da árvore. \\ \hline
+Upheap & $O(\log n)$ & O elemento sobe no máximo da folha até a raiz. \\ \hline
+Downheap & $O(\log n)$ & O elemento desce no máximo da raiz até uma folha. \\ \hline
+Remoção da raiz & $O(\log n)$ & Uma cópia para a raiz seguida de um Downheap. \\ \hline
+Busca por valor & $O(n)$ & No pior caso, percorre o vetor inteiro. \\ \hline
+Remoção de valor específico & $O(n)$ & A busca linear pesa mais que o ajuste logarítmico feito depois dela. \\ \hline
+Impressão do heap & $O(n)$ & Cada elemento é impresso uma vez. \\ \hline
 \end{tabular}
 \fonte{Elaborado pelos autores (2026).}
 \end{quadro}
 
-A complexidade da remoção varia conforme a maneira como ela é executada. Quando a meta é remover a raiz, não é preciso localizar o elemento, uma vez que sua posição é conhecida. Por esse motivo, essa operação possui complexidade $O(\log n)$.
+O custo da remoção depende do que se remove. A raiz tem posição conhecida, então removê-la custa só o Downheap, $O(\log n)$.
 
-Na opção 4 do programa, por outro lado, o usuário escolhe um valor específico para remover. Como o heap não ordena os elementos de forma completa, não se pode saber de antemão em que posição esse valor está. Assim, a função de busca deve percorrer os elementos até localizar o valor desejado, o que resulta em complexidade $O(n)$.
+Na opção 4 do programa, por outro lado, o usuário escolhe um valor qualquer, e não há como saber de antemão em que posição ele está, porque o heap não é ordenado. A busca percorre o vetor e custa $O(n)$.
 
-Portanto, mesmo que o heap binário possibilite procedimentos eficientes de inserção e reorganização, a localização de um elemento qualquer ainda é linear. Essa propriedade deve ser levada em conta ao optar por essa estrutura em diferentes aplicações.
+Na prática, o heap é eficiente para inserir e para remover o maior elemento, mas não para encontrar um valor arbitrário. Uma aplicação que precise das duas coisas com frequência teria que combinar o heap com outra estrutura que guarde a posição de cada valor, como uma tabela hash.
 
 \chapter{IMPLEMENTAÇÃO EM LINGUAGEM C}
 
-A implementação desenvolvida neste trabalho utiliza a linguagem C para representar e manipular um heap máximo por meio de um vetor. O programa permite inserir elementos, remover o maior elemento, remover um valor específico, visualizar a estrutura e encerrar a execução por meio de um menu interativo. O código está no arquivo \texttt{heap.c}, entregue junto com este relatório.
+O programa, escrito em C, implementa um heap máximo guardado em vetor. Pelo menu, o usuário pode inserir elementos, remover o maior, remover um valor específico, imprimir o heap e sair. O código está no arquivo \texttt{heap.c}, entregue junto com este relatório.
 
-Para organizar o código, foram utilizadas funções específicas para cada operação. Essa divisão facilita a compreensão da implementação, evita a repetição desnecessária de instruções e permite que cada procedimento seja responsável por uma tarefa bem definida.
+Cada operação ficou em uma função própria, e as funções menores, de cálculo de índices e de troca, são reaproveitadas pelas maiores.
 
 \section{ESTRUTURA DE DADOS}
 
-A representação do heap foi realizada através de uma \texttt{struct}, que inclui um vetor de inteiros e uma variável que armazena a quantidade atual de elementos (Quadro~\ref{qua:struct}).
+O heap é uma \texttt{struct} com um vetor de inteiros e o número de elementos guardados (Quadro~\ref{qua:struct}).
 
 \begin{quadro}[htb]
 \caption{\label{qua:struct}Estrutura que representa o heap}
@@ -458,51 +462,53 @@ typedef struct heap {
 \fonte{Elaborado pelos autores (2026).}
 \end{quadro}
 
-O vetor tem capacidade máxima de 150 posições, determinada pela constante \texttt{MAX}. A variável \texttt{tam} mostra quantos elementos estão realmente guardados na estrutura. Essa representação possibilita empregar o vetor para simular uma árvore binária completa, sem a exigência de criar estruturas individuais para cada nó ou usar ponteiros para interligar os elementos. Como os índices iniciam em zero, as posições dos pais e dos filhos são determinadas pelas fórmulas apresentadas no Capítulo~4.
+O vetor comporta até 150 elementos (constante \texttt{MAX}), e \texttt{tam} indica quantos estão em uso. Os nós da árvore são as posições do vetor, e as ligações entre eles são calculadas com as fórmulas do Capítulo~4, então nenhum nó precisa de ponteiro.
 
 \section{FUNÇÕES IMPLEMENTADAS}
 
-O programa foi dividido em funções, cada uma responsável por uma operação específica do heap:
+As funções do programa são:
 
 \begin{itemize}
-  \item \texttt{criaHeap}: inicializa a estrutura, definindo o tamanho inicial como zero;
-  \item \texttt{pai}, \texttt{esquerda} e \texttt{direita}: calculam, respectivamente, o índice do pai, do filho esquerdo e do filho direito de um nó;
-  \item \texttt{troca}: troca de posição um elemento do vetor com o seu pai; é usada durante os procedimentos de reorganização do heap;
-  \item \texttt{insere}: lê valores informados pelo usuário até que ele digite \texttt{s}; cada valor é colocado na próxima posição disponível e ajustado com \texttt{upHeap};
-  \item \texttt{upHeap}: ajusta um elemento em direção à raiz, comparando-o com seu pai e efetuando as trocas necessárias para manter a propriedade de heap máximo;
-  \item \texttt{removeMaior}: remove a raiz (o maior valor), informa qual valor foi removido, coloca o último elemento na raiz e chama \texttt{downHeap};
-  \item \texttt{buscaNo}: procura um valor específico no vetor e retorna sua posição, ou $-1$ quando ele não existe;
-  \item \texttt{removeHeap}: remove um valor escolhido pelo usuário, usando \texttt{buscaNo}; a posição encontrada recebe o último elemento do heap, o tamanho é reduzido e o elemento é ajustado com \texttt{upHeap} e \texttt{downHeap};
-  \item \texttt{downHeap}: ajusta um elemento em direção aos níveis inferiores da árvore, trocando-o com o maior filho enquanto ele for menor que esse filho;
-  \item \texttt{imprime}: percorre o vetor e mostra, para cada nó, o seu valor e os valores dos filhos esquerdo e direito; quando um filho não existe, mostra \texttt{vazio};
-  \item \texttt{menu}, \texttt{leInt} e \texttt{leStr}: mostram o menu e fazem a leitura das entradas, rejeitando valores que não são números inteiros.
+  \item \texttt{criaHeap}: deixa o heap vazio, com \texttt{tam} igual a zero;
+  \item \texttt{pai}, \texttt{esquerda} e \texttt{direita}: calculam o índice do pai, do filho esquerdo e do filho direito de um nó;
+  \item \texttt{troca}: troca um elemento do vetor com o pai dele e é usada pelo \texttt{upHeap} e pelo \texttt{downHeap};
+  \item \texttt{insere}: lê valores até o usuário digitar \texttt{s}, coloca cada um na primeira posição livre e o ajusta com \texttt{upHeap};
+  \item \texttt{upHeap}: sobe um elemento enquanto ele for maior que o pai;
+  \item \texttt{removeMaior}: remove a raiz, mostra o valor removido, coloca o último elemento na raiz e chama \texttt{downHeap};
+  \item \texttt{buscaNo}: devolve a posição de um valor no vetor, ou $-1$ se ele não estiver no heap;
+  \item \texttt{removeHeap}: remove um valor escolhido pelo usuário, achando a posição dele com \texttt{buscaNo}, colocando ali o último elemento, diminuindo o tamanho e ajustando com \texttt{upHeap} e \texttt{downHeap};
+  \item \texttt{downHeap}: desce um elemento, trocando-o com o maior filho, enquanto ele for menor que esse filho;
+  \item \texttt{imprime}: mostra, para cada nó, o valor dele e os valores dos filhos esquerdo e direito, ou \texttt{vazio} quando o filho não existe;
+  \item \texttt{menu}, \texttt{leInt} e \texttt{leStr}: mostram o menu e leem a entrada do teclado.
 \end{itemize}
 
 \section{FUNCIONAMENTO DO PROGRAMA}
 
-A interação com o usuário ocorre por meio de um menu apresentado no terminal, que permite selecionar qual operação deverá ser executada sem precisar modificar o código-fonte. As opções disponibilizadas são:
+O programa mostra o menu no terminal e executa a opção escolhida. As opções são:
 
 \begin{itemize}
-  \item 1 -- inserir um ou mais elementos;
-  \item 2 -- remover o maior elemento (a raiz);
-  \item 3 -- imprimir o heap;
-  \item 4 -- remover um valor específico;
-  \item 0 -- sair do programa.
+  \item 1: inserir um ou mais elementos;
+  \item 2: remover o maior elemento (a raiz);
+  \item 3: imprimir o heap;
+  \item 4: remover um valor específico;
+  \item 0: sair do programa.
 \end{itemize}
 
-Quando o usuário escolhe a opção de inserção, o programa solicita valores em sequência, até que seja digitado \texttt{s}, e cada valor é inserido com o ajuste necessário para preservar a propriedade de heap máximo. Na opção 2, o programa retira a raiz, informa o valor removido e reorganiza a estrutura. Na opção 4, o usuário informa o valor que deseja retirar; o programa procura esse elemento e, caso ele seja encontrado, realiza a substituição e a reorganização da estrutura.
+Na inserção, o programa pede valores um depois do outro, até o usuário digitar \texttt{s}, e insere cada um com o Upheap. Na opção 2, retira a raiz, mostra o valor removido e reorganiza o heap com o Downheap. Na opção 4, pede um valor, procura esse valor no vetor e, se o encontrar, faz a remoção e o ajuste. Entradas que não são números inteiros são recusadas com a mensagem ``Valor invalido!''.
 
-A opção de impressão mostra cada nó do heap, na ordem em que aparece no vetor, com o seu valor e os valores dos seus filhos esquerdo e direito, indicando \texttt{vazio} quando um filho não existe. Essa funcionalidade permite acompanhar as alterações realizadas após as operações de inserção e remoção. Por fim, a opção 0 encerra a execução do programa.
+A impressão mostra cada nó na ordem em que ele aparece no vetor, com o valor do nó e os valores dos filhos esquerdo e direito, e escreve \texttt{vazio} quando o filho não existe, no mesmo formato do exemplo do enunciado. Assim dá para conferir a árvore depois de cada inserção ou remoção. A opção 0 encerra o programa.
 
-\section{ORGANIZAÇÃO E MODULARIZAÇÃO}
+\section{ORGANIZAÇÃO DO CÓDIGO}
 
-A divisão do programa em funções resulta em uma implementação mais estruturada e auxilia na manutenção do código. Cada função tem uma responsabilidade única, possibilitando entender o funcionamento geral sem a necessidade de examinar todas as operações ao mesmo tempo. Além disso, a separação entre as funções de cálculo de índices, troca de itens, inserção, busca, remoção e impressão torna o código mais fácil de reutilizar.
+As funções \texttt{pai}, \texttt{esquerda} e \texttt{direita} concentram as fórmulas de índice. O \texttt{upHeap}, o \texttt{downHeap} e o \texttt{imprime} chamam essas funções em vez de repetir as contas, então uma fórmula errada precisaria ser corrigida em um lugar só. A função \texttt{troca} também é compartilhada: o \texttt{upHeap} a usa para trocar um elemento com o pai, e o \texttt{downHeap}, para trocar o maior filho com o pai dele.
 
-O uso de um vetor para representar a árvore também facilita a administração da memória, já que os elementos ficam guardados em posições consecutivas, mantendo a forma de uma árvore binária completa.
+A leitura do teclado passa pelas funções \texttt{leInt} e \texttt{leStr}, que tratam o fim de linha e o fim da entrada. Quem as chama só precisa validar o número lido.
+
+Como a árvore fica em um vetor dentro da \texttt{struct}, o heap inteiro ocupa um bloco contínuo de memória e o programa não precisa de \texttt{malloc} nem de \texttt{free}.
 
 \section{COMPILAÇÃO E EXEMPLO DE EXECUÇÃO}
 
-O programa pode ser compilado com o GCC pelo comando \texttt{gcc -Wall -std=c99 -o heap heap.c} e compila sem erros nem avisos. O Quadro~\ref{qua:execucao} mostra uma execução com o mesmo exemplo do enunciado do trabalho: a inserção dos valores 1, 2 e 3, a impressão do heap, a remoção do maior elemento e uma nova impressão. O menu, que é repetido antes de cada operação, foi omitido depois da primeira vez.
+O programa compila com o GCC, sem erros nem avisos, pelo comando \texttt{gcc -Wall -std=c99 -o heap heap.c}. O Quadro~\ref{qua:execucao} mostra uma execução com o exemplo do enunciado: inserir 1, 2 e 3, imprimir o heap, remover o maior elemento e imprimir de novo. O menu, que aparece antes de cada operação, foi omitido depois da primeira vez.
 
 \begin{quadro}[htbp]
 \caption{\label{qua:execucao}Exemplo de execução do programa}
@@ -542,19 +548,19 @@ No 1: filho esq: vazio, filho dir: vazio
 \fonte{Elaborado pelos autores (2026).}
 \end{quadro}
 
-Assim, a implementação evidencia como os conceitos teóricos de heaps binários podem ser utilizados na prática com ferramentas simples da linguagem C.
+A saída é a mesma do enunciado. Depois das inserções, o 3 está na raiz, com o 1 e o 2 como filhos. Depois da remoção, o 2 vai para a raiz e fica com o 1 como filho esquerdo.
 
 \chapter{CONCLUSÃO}
 
-A elaboração deste trabalho possibilitou examinar e entender o funcionamento das filas de prioridade através da implementação de heaps binários, uma estrutura de dados essencial para aplicações que precisam organizar elementos conforme seus níveis de prioridade.
+Neste trabalho estudamos as filas de prioridade implementadas como heaps binários e implementamos um heap máximo em C.
 
-No decorrer da pesquisa, foram discutidas as particularidades dos heaps máximo e mínimo, a característica de árvore binária completa, a representação em vetor e as principais operações empregadas para gerenciar essa estrutura.
+Na parte de pesquisa, vimos a diferença entre heap máximo e heap mínimo, a exigência de árvore completa, o armazenamento em vetor com índices a partir de zero e as operações de inserção e remoção, com o Upheap e o Downheap.
 
-A implementação em C permitiu aplicar os conceitos estudados, com funcionalidades de inserção, remoção, busca e impressão dos elementos. A aplicação dos procedimentos Upheap e Downheap mostrou como reorganizar os elementos após alterações, preservando a propriedade de ordem do heap máximo.
+Na implementação, os detalhes que decidem se o código funciona são as condições de parada. No Downheap, é preciso verificar se cada filho existe antes de compará-lo. Na remoção de um valor, é preciso tratar o caso em que o valor removido é o último do vetor.
 
-Também foi possível notar a relevância da análise de complexidade para entender o desempenho das operações. Embora a inserção, a remoção da raiz e os ajustes de reorganização tenham complexidade $O(\log n)$, a busca por um valor em particular apresenta complexidade $O(n)$, pois os elementos não estão totalmente ordenados no vetor.
+A análise de complexidade mostrou o limite da estrutura: inserir, remover a raiz e reorganizar custam $O(\log n)$, mas encontrar um valor qualquer custa $O(n)$, porque o vetor não é ordenado.
 
-Conclui-se que os heaps binários são estruturas eficientes e importantes para a criação de filas de prioridade, especialmente quando é preciso acessar e retirar rapidamente o item de maior ou menor prioridade. Além disso, a execução do trabalho ajudou no aprimoramento do entendimento sobre árvores, vetores, modularização e análise de algoritmos, conectando os conceitos teóricos da disciplina com uma aplicação prática.
+O heap binário resolve bem o problema para o qual foi pensado, que é entregar sempre o elemento de maior (ou de menor) prioridade com custo logarítmico. Para outras necessidades, como buscar valores arbitrários, ele precisa ser combinado com outras estruturas.
 
 % ================= POS-TEXTUAIS =================
 \postextual

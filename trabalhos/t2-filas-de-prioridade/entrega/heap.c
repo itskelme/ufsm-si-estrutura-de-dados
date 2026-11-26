@@ -5,8 +5,8 @@
  *
  * Integrantes:
  *   Diego Kelme Santos da Silva
- *   Gabriel Sangoi
- *   Pedro Klein
+ *   Gabriel Araujo Sangoi
+ *   Pedro Augusto Klein
  *
  * Compilar: gcc -Wall -std=c99 -o heap heap.c
  */

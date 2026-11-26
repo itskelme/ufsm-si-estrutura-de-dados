@@ -4,7 +4,7 @@ Trabalho de pesquisa e implementacao sobre filas de prioridade implementadas com
 PDF (conceitos, propriedades, armazenamento em vetor, passo a passo do upheap e do downheap, pseudocodigos e
 complexidade) e um programa em C com menu para inserir, remover e imprimir o heap.
 
-**Grupo:** Diego Kelme Santos da Silva, Gabriel Sangoi e Pedro Klein · **Entrega:** 26/11/2026, por e-mail
+**Grupo:** Diego Kelme Santos da Silva, Gabriel Araujo Sangoi e Pedro Augusto Klein · **Entrega:** 26/11/2026, por e-mail
 
 ## Estrutura do Projeto
 
